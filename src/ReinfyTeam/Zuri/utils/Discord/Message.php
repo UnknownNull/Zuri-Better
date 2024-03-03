@@ -24,8 +24,10 @@ declare(strict_types=1);
 
 namespace ReinfyTeam\Zuri\utils\Discord;
 
-class Message implements \JsonSerializable {
-	protected $data = [];
+use JsonSerializable;
+
+class Message implements JsonSerializable {
+	protected array $data = [];
 
 	public function __construct(array $embeds = null) {
 		if ($embeds !== null) {

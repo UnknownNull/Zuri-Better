@@ -30,7 +30,7 @@ use function microtime;
 
 class ServerTickTask extends Task {
 	private float $tick;
-	private static $instance = null;
+	private static ?ServerTickTask $instance = null;
 	protected APIProvider $plugin;
 
 	public function __construct(APIProvider $plugin) {

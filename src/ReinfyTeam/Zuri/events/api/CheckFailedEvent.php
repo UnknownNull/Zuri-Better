@@ -27,10 +27,16 @@ namespace ReinfyTeam\Zuri\events\api;
 use pocketmine\event\CancellableTrait;
 use ReinfyTeam\Zuri\player\PlayerAPI;
 
+/**
+ * @property string $subType
+ */
 class CheckFailedEvent extends APIEvent {
 	use CancellableTrait;
 
-	public function __construct(PlayerAPI $playerAPI, string $supplier, string $subType) {
+    private string $supplier;
+    private string $subType;
+
+    public function __construct(PlayerAPI $playerAPI, string $supplier, string $subType) {
 		$this->supplier = $supplier;
 		$this->subType = $subType;
 		parent::__construct($playerAPI);

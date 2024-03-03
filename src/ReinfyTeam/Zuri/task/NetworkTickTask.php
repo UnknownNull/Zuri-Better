@@ -28,11 +28,12 @@ use pocketmine\scheduler\Task;
 use pocketmine\Server;
 use ReinfyTeam\Zuri\APIProvider;
 use ReinfyTeam\Zuri\config\ConfigManager;
+use ReinfyTeam\Zuri\config\ConfigPaths;
 
 class NetworkTickTask extends Task {
 	private array $network = [];
 	private array $count = [];
-	private static $instance = null;
+	private static ?NetworkTickTask $instance = null;
 	protected APIProvider $plugin;
 
 	public function __construct(APIProvider $plugin) {
@@ -54,8 +55,8 @@ class NetworkTickTask extends Task {
 							$this->count[$player->getUniqueId()->__toString()] += 1;
 						}
 					}
-					if ($this->count[$player->getUniqueId()->__toString()] > ConfigManager::getData(ConfigManager::NETWORK_LIMIT)) { // this will let decide in how many count will able to connect to the server.
-						$player->kick(ConfigManager::getData(ConfigManager::NETWORK_MESSAGE), null, ConfigManager::getData(ConfigManager::NETWORK_MESSAGE));
+					if ($this->count[$player->getUniqueId()->__toString()] > ConfigManager::getData(ConfigPaths::NETWORK_LIMIT)) { // this will let decide in how many count will able to connect to the server.
+						$player->kick(ConfigManager::getData(ConfigPaths::NETWORK_MESSAGE), null, ConfigManager::getData(ConfigPaths::NETWORK_MESSAGE));
 					}
 				}
 			} else {

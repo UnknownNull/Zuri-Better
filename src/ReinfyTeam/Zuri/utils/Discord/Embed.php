@@ -25,7 +25,7 @@ declare(strict_types=1);
 namespace ReinfyTeam\Zuri\utils\Discord;
 
 class Embed {
-	protected $data = [];
+	protected array $data = [];
 
 	public function asArray() : array {
 		return $this->data;

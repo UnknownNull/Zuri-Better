@@ -28,13 +28,14 @@ use pocketmine\Server;
 use function filter_var;
 
 class Webhook {
-	protected $url;
+	protected string $url;
 
 	public function __construct(string $url) {
 		$this->url = $url;
 	}
 
-	public function getURL() : string {
+	public function getURL() : string
+    {
 		return $this->url;
 	}
 

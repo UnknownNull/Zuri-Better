@@ -30,7 +30,7 @@ use ReinfyTeam\Zuri\events\CaptchaEvent;
 use ReinfyTeam\Zuri\player\PlayerAPI;
 
 class CaptchaTask extends Task {
-	private static $instance = null;
+	private static ?CaptchaTask $instance = null;
 	protected APIProvider $plugin;
 
 	public function __construct(APIProvider $plugin) {

@@ -66,7 +66,11 @@ class AimAssistB extends Check {
 			if (!empty($nLocation)) {
 				$toYaw = $nLocation["to"]->getYaw();
 				$fromYaw = $nLocation["from"]->getYaw();
+                $toPitch = $nLocation["to"]->getPitch();
+                $fromPitch = $nLocation["from"]->getPitch();
+
 				$abs = abs($toYaw - $fromYaw);
+                $abs2 = abs($toPitch - $fromPitch);
 				if ($abs >= 1 && fmod($abs, 0.1) == 0) {
 					if (fmod($abs, 1.0) == 0 || fmod($abs, 10.0) == 0 || fmod($abs, 30.0) == 0) {
 						$this->failed($playerAPI);

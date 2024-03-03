@@ -26,9 +26,11 @@ namespace ReinfyTeam\Zuri\player;
 
 use pocketmine\block\BlockTypeIds;
 use pocketmine\entity\Location;
+use pocketmine\inventory\PlayerInventory;
 use pocketmine\math\Facing;
 use pocketmine\player\Player;
 use pocketmine\player\SurvivalBlockBreakHandler;
+use ReflectionProperty;
 use ReinfyTeam\Zuri\APIProvider;
 use function microtime;
 
@@ -83,7 +85,7 @@ class PlayerAPI implements IPlayerAPI {
 	private array $externalData = [];
 	private string $captchaCode = "nocode";
 
-	public function __construct(private string $player) {
+	public function __construct(private readonly string $player) {
 		// no-op
 	}
 
@@ -282,9 +284,8 @@ class PlayerAPI implements IPlayerAPI {
 			return null;
 		}
 		if ($ref === null) {
-			$ref = new \ReflectionProperty(Player::class, "blockBreakHandler");
-			$ref->setAccessible(true);
-		}
+			$ref = new ReflectionProperty(Player::class, "blockBreakHandler");
+        }
 		return $ref->getValue($this->getPlayer());
 	}
 
@@ -484,7 +485,9 @@ class PlayerAPI implements IPlayerAPI {
 	}
 
 	public function setViolation(string $supplier, int $amount) : void {
-		$this->violations[$this->player->getName()][$supplier]["vl"] = $amount;
+        if ($this->player instanceof Player){
+            $this->violations[$this->player->getName()][$supplier]["vl"] = $amount;
+        }
 	}
 
 	public function resetViolation(string $supplier) : void {
@@ -573,11 +576,13 @@ class PlayerAPI implements IPlayerAPI {
 		$this->captchaCode = $data;
 	}
 
-	public function getInventory() {
+	public function getInventory(): PlayerInventory
+    {
 		return $this->getPlayer()->getInventory();
 	}
 
-	public function getLocation() {
+	public function getLocation(): Location
+    {
 		return $this->getPlayer()->getLocation();
 	}
 

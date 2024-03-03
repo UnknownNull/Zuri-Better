@@ -22,14 +22,15 @@
 
 declare(strict_types=1);
 
-namespace ReinfyTeam\Zuri\utils\discord;
+namespace ReinfyTeam\Zuri\utils\Discord;
 
 use ReinfyTeam\Zuri\config\ConfigManager;
 use ReinfyTeam\Zuri\player\PlayerAPI;
 use ReinfyTeam\Zuri\utils\ReplaceText;
 
 class Discord extends ConfigManager {
-	public static function sendMessage(string $text) {
+	public static function sendMessage(string $text): void
+    {
 		$discord = new Webhook(self::getData(self::DISCORD_WEBHOOK));
 		$msg = new Message();
 		$msg->setUsername("Zuri Anticheat");

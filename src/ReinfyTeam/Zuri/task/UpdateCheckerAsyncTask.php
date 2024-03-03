@@ -35,7 +35,7 @@ use function json_decode;
 use function strtotime;
 
 class UpdateCheckerAsyncTask extends AsyncTask {
-	private $currentVersion;
+	private string $currentVersion;
 
 	public function __construct(string $currentVersion) {
 		$this->currentVersion = $currentVersion;
@@ -66,7 +66,7 @@ class UpdateCheckerAsyncTask extends AsyncTask {
 					$dlcount = $json["assets"][0]["download_count"];
 					$branch = $json["target_commitish"];
 					$publishTime = date('F j, o', strtotime($json["published_at"]));
-					$noUpdates = false;
+
 				} else {
 					$noUpdates = true;
 				}
