@@ -24,68 +24,8 @@ declare(strict_types=1);
 
 namespace ReinfyTeam\Zuri;
 
-use Exception;
-use Phar;
 use pocketmine\plugin\PluginBase;
 use pocketmine\utils\TextFormat;
-use ReinfyTeam\Zuri\checks\aimassist\AimAssistA;
-use ReinfyTeam\Zuri\checks\aimassist\AimAssistB;
-use ReinfyTeam\Zuri\checks\aimassist\AimAssistC;
-use ReinfyTeam\Zuri\checks\aimassist\AimAssistD;
-use ReinfyTeam\Zuri\checks\aimassist\AimAssistE;
-use ReinfyTeam\Zuri\checks\badpackets\Crasher;
-use ReinfyTeam\Zuri\checks\badpackets\FastEat;
-use ReinfyTeam\Zuri\checks\badpackets\SelfHit;
-use ReinfyTeam\Zuri\checks\blockbreak\InstaBreak;
-use ReinfyTeam\Zuri\checks\blockbreak\WrongMining;
-use ReinfyTeam\Zuri\checks\blockinteract\BlockReach;
-use ReinfyTeam\Zuri\checks\blockplace\FillBlock;
-use ReinfyTeam\Zuri\checks\chat\SpamA;
-use ReinfyTeam\Zuri\checks\chat\SpamB;
-use ReinfyTeam\Zuri\checks\chat\SpamC;
-use ReinfyTeam\Zuri\checks\combat\autoclick\AutoClickA;
-use ReinfyTeam\Zuri\checks\combat\autoclick\AutoClickB;
-use ReinfyTeam\Zuri\checks\combat\autoclick\AutoClickC;
-use ReinfyTeam\Zuri\checks\combat\ImposibleHit;
-use ReinfyTeam\Zuri\checks\combat\killaura\KillAuraA;
-use ReinfyTeam\Zuri\checks\combat\killaura\KillAuraB;
-use ReinfyTeam\Zuri\checks\combat\killaura\KillAuraC;
-use ReinfyTeam\Zuri\checks\combat\killaura\KillAuraD;
-use ReinfyTeam\Zuri\checks\combat\killaura\KillAuraE;
-use ReinfyTeam\Zuri\checks\combat\reach\ReachA;
-use ReinfyTeam\Zuri\checks\combat\reach\ReachB;
-use ReinfyTeam\Zuri\checks\combat\velocity\VelocityA;
-use ReinfyTeam\Zuri\checks\combat\velocity\VelocityB;
-use ReinfyTeam\Zuri\checks\fly\FlyA;
-use ReinfyTeam\Zuri\checks\fly\FlyB;
-use ReinfyTeam\Zuri\checks\fly\FlyC;
-use ReinfyTeam\Zuri\checks\inventory\AutoArmor;
-use ReinfyTeam\Zuri\checks\inventory\ChestAura;
-use ReinfyTeam\Zuri\checks\inventory\ChestStealler;
-use ReinfyTeam\Zuri\checks\inventory\InventoryCleaner;
-use ReinfyTeam\Zuri\checks\inventory\InventoryMove;
-use ReinfyTeam\Zuri\checks\moving\AirMovement;
-use ReinfyTeam\Zuri\checks\moving\AntiImmobile;
-use ReinfyTeam\Zuri\checks\moving\FastLadder;
-use ReinfyTeam\Zuri\checks\moving\Jesus;
-use ReinfyTeam\Zuri\checks\moving\OmniSprint;
-use ReinfyTeam\Zuri\checks\moving\Phase;
-use ReinfyTeam\Zuri\checks\moving\speed\SpeedA;
-use ReinfyTeam\Zuri\checks\moving\speed\SpeedB;
-use ReinfyTeam\Zuri\checks\moving\speed\SpeedC;
-use ReinfyTeam\Zuri\checks\moving\Spider;
-use ReinfyTeam\Zuri\checks\moving\Step;
-use ReinfyTeam\Zuri\checks\moving\Timer;
-use ReinfyTeam\Zuri\checks\moving\WrongPitch;
-use ReinfyTeam\Zuri\checks\network\AntiBot;
-use ReinfyTeam\Zuri\checks\network\EditionFaker;
-use ReinfyTeam\Zuri\checks\network\ProxyBot;
-use ReinfyTeam\Zuri\checks\payload\CustomPayloadA;
-use ReinfyTeam\Zuri\checks\scaffold\ScaffoldA;
-use ReinfyTeam\Zuri\checks\scaffold\ScaffoldB;
-use ReinfyTeam\Zuri\checks\scaffold\ScaffoldC;
-use ReinfyTeam\Zuri\checks\scaffold\ScaffoldD;
-use ReinfyTeam\Zuri\checks\scaffold\ScaffoldE;
 use ReinfyTeam\Zuri\command\ZuriCommand;
 use ReinfyTeam\Zuri\config\ConfigManager;
 use ReinfyTeam\Zuri\listener\PlayerListener;
@@ -99,21 +39,18 @@ use ReinfyTeam\Zuri\utils\InternetAddress;
 use ReinfyTeam\Zuri\utils\PermissionManager;
 
 class APIProvider extends PluginBase {
-    const VERSION_PLUGIN = "1.1.0";
+    const VERSION_PLUGIN = "1.1.2";
     private static APIProvider $instance;
+	private ProxyUDPSocket $proxyUDPSocket;
 
-    private array $checks = [];
+	private array $checks = [];
 
-    public static function Check()
-    { // todo add
-    }
-
-    public function onLoad() : void {
+	public function onLoad() : void {
 		self::$instance = $this;
 		ConfigManager::checkConfig();
 
-		if (!Phar::running()) {
-			$this->getServer()->getLogger()->notice(ConfigManager::getData(config\ConfigPaths::PREFIX) . TextFormat::RED . " You are running source-code of the plugin, this might degrade Zuri checking performance. We recommended to download phar plugin from poggit builds or github. Instead of using source-code from github.");
+		if (!\Phar::running(true)) {
+			$this->getServer()->getLogger()->notice(ConfigManager::getData(ConfigManager::PREFIX) . TextFormat::RED . " You are running source-code of the plugin, this might degrade Zuri checking performance. We recommended to download phar plugin from poggit builds or github. Instead of using source-code from github.");
 		}
 	}
 
@@ -127,111 +64,117 @@ class APIProvider extends PluginBase {
 		$this->getScheduler()->scheduleRepeatingTask(new CaptchaTask($this), 20);
 		$this->getScheduler()->scheduleRepeatingTask(new NetworkTickTask($this), 100);
 		$this->getServer()->getAsyncPool()->submitTask(new UpdateCheckerAsyncTask($this->getDescription()->getVersion()));
-		PermissionManager::getInstance()->register(ConfigManager::getData(config\ConfigPaths::PERMISSION_BYPASS_PERMISSION), PermissionManager::OPERATOR);
+		PermissionManager::getInstance()->register(ConfigManager::getData(ConfigManager::PERMISSION_BYPASS_PERMISSION), PermissionManager::OPERATOR);
 		$this->getServer()->getPluginManager()->registerEvents(new PlayerListener(), $this);
 		$this->getServer()->getPluginManager()->registerEvents(new ServerListener(), $this);
 		$this->getServer()->getCommandMap()->register("Zuri", new ZuriCommand());
-		$proxyUDPSocket = new ProxyUDPSocket();
-		if (ConfigManager::getData(config\ConfigPaths::PROXY_ENABLE)) {
-			$ip = ConfigManager::getData(config\ConfigPaths::PROXY_IP);
-			$port = ConfigManager::getData(config\ConfigPaths::PROXY_PORT);
+		$this->proxyUDPSocket = new ProxyUDPSocket();
+		if (ConfigManager::getData(ConfigManager::PROXY_ENABLE)) {
+			$ip = ConfigManager::getData(ConfigManager::PROXY_IP);
+			$port = ConfigManager::getData(ConfigManager::PROXY_PORT);
 			try {
-				$proxyUDPSocket->bind(new InternetAddress($ip, $port));
-			} catch (Exception $exception) {
-				$this->getServer()->getLogger()->notice(ConfigManager::getData(config\ConfigPaths::PREFIX) . TextFormat::RED . " {$exception->getMessage()}, stopping proxy...");
+				$this->proxyUDPSocket->bind(new InternetAddress($ip, $port));
+			} catch (\Exception $exception) {
+				$this->getServer()->getLogger()->notice(ConfigManager::getData(ConfigManager::PREFIX) . TextFormat::RED . " {$exception->getMessage()}, stopping proxy...");
 				return;
 			}
 		}
 	}
 
 	/**
-	 * Do not call internally.
+	 * Do not call internally, or do not call double.
 	 */
-	private function loadChecks() : void {
+	public function loadChecks() : void {
+		if (!empty($this->checks)) {
+			$this->checks = [];
+		}
+
 		// Aim Assist
-		$this->checks[] = new AimAssistA();
-		$this->checks[] = new AimAssistB();
-		$this->checks[] = new AimAssistC();
-		$this->checks[] = new AimAssistD();
-		$this->checks[] = new AimAssistE();
+		$this->checks[] = new \ReinfyTeam\Zuri\checks\aimassist\AimAssistA();
+		$this->checks[] = new \ReinfyTeam\Zuri\checks\aimassist\AimAssistB();
+		$this->checks[] = new \ReinfyTeam\Zuri\checks\aimassist\AimAssistC();
+		$this->checks[] = new \ReinfyTeam\Zuri\checks\aimassist\AimAssistD();
+		$this->checks[] = new \ReinfyTeam\Zuri\checks\aimassist\AimAssistE();
 
 		// Badpackets
-		$this->checks[] = new Crasher();
-		$this->checks[] = new FastEat();
-		$this->checks[] = new SelfHit();
+		$this->checks[] = new \ReinfyTeam\Zuri\checks\badpackets\Crasher();
+		$this->checks[] = new \ReinfyTeam\Zuri\checks\badpackets\FastEat();
+		$this->checks[] = new \ReinfyTeam\Zuri\checks\badpackets\SelfHit();
+		$this->checks[] = new \ReinfyTeam\Zuri\checks\badpackets\FastThrow();
 
 		// Blockbreak
-		$this->checks[] = new WrongMining();
-		$this->checks[] = new InstaBreak();
+		$this->checks[] = new \ReinfyTeam\Zuri\checks\blockbreak\WrongMining();
+		$this->checks[] = new \ReinfyTeam\Zuri\checks\blockbreak\InstaBreak();
 
 		// BlockInteract
-		$this->checks[] = new BlockReach();
+		$this->checks[] = new \ReinfyTeam\Zuri\checks\blockinteract\BlockReach();
 
 		// BlockPlace
-		$this->checks[] = new FillBlock();
+		$this->checks[] = new \ReinfyTeam\Zuri\checks\blockplace\FillBlock();
 
 		// Chat
-		$this->checks[] = new SpamA();
-		$this->checks[] = new SpamB();
-		$this->checks[] = new SpamC();
+		$this->checks[] = new \ReinfyTeam\Zuri\checks\chat\SpamA();
+		$this->checks[] = new \ReinfyTeam\Zuri\checks\chat\SpamB();
+		$this->checks[] = new \ReinfyTeam\Zuri\checks\chat\SpamC();
 
 		// Combat
-		$this->checks[] = new ReachA();
-		$this->checks[] = new ReachB();
-		$this->checks[] = new AutoClickA();
-		$this->checks[] = new AutoClickB();
-		$this->checks[] = new AutoClickC();
-		$this->checks[] = new KillAuraA();
-		$this->checks[] = new KillAuraB();
-		$this->checks[] = new KillAuraC();
-		$this->checks[] = new KillAuraD();
-		$this->checks[] = new KillAuraE();
-		$this->checks[] = new VelocityA();
-		$this->checks[] = new VelocityB();
-		$this->checks[] = new ImposibleHit();
+		$this->checks[] = new \ReinfyTeam\Zuri\checks\combat\reach\ReachA();
+		$this->checks[] = new \ReinfyTeam\Zuri\checks\combat\reach\ReachB();
+		$this->checks[] = new \ReinfyTeam\Zuri\checks\combat\autoclick\AutoClickA();
+		$this->checks[] = new \ReinfyTeam\Zuri\checks\combat\autoclick\AutoClickB();
+		$this->checks[] = new \ReinfyTeam\Zuri\checks\combat\autoclick\AutoClickC();
+		$this->checks[] = new \ReinfyTeam\Zuri\checks\combat\killaura\KillAuraA();
+		$this->checks[] = new \ReinfyTeam\Zuri\checks\combat\killaura\KillAuraB();
+		$this->checks[] = new \ReinfyTeam\Zuri\checks\combat\killaura\KillAuraC();
+		$this->checks[] = new \ReinfyTeam\Zuri\checks\combat\killaura\KillAuraD();
+		$this->checks[] = new \ReinfyTeam\Zuri\checks\combat\killaura\KillAuraE();
+		$this->checks[] = new \ReinfyTeam\Zuri\checks\combat\velocity\VelocityA();
+		$this->checks[] = new \ReinfyTeam\Zuri\checks\combat\velocity\VelocityB();
+		$this->checks[] = new \ReinfyTeam\Zuri\checks\combat\ImposibleHit();
 
 		// Fly
-		$this->checks[] = new FlyA();
-		$this->checks[] = new FlyB();
-		$this->checks[] = new FlyC();
+		$this->checks[] = new \ReinfyTeam\Zuri\checks\fly\FlyA();
+		$this->checks[] = new \ReinfyTeam\Zuri\checks\fly\FlyB();
+		$this->checks[] = new \ReinfyTeam\Zuri\checks\fly\FlyC();
 
 		// Inventory
-		$this->checks[] = new AutoArmor();
-		$this->checks[] = new ChestAura();
-		$this->checks[] = new InventoryMove();
-		$this->checks[] = new ChestStealler();
-		$this->checks[] = new InventoryCleaner();
+		$this->checks[] = new \ReinfyTeam\Zuri\checks\inventory\AutoArmor();
+		$this->checks[] = new \ReinfyTeam\Zuri\checks\inventory\ChestAura();
+		$this->checks[] = new \ReinfyTeam\Zuri\checks\inventory\InventoryMove();
+		$this->checks[] = new \ReinfyTeam\Zuri\checks\inventory\ChestStealler();
+		$this->checks[] = new \ReinfyTeam\Zuri\checks\inventory\InventoryCleaner();
 
 		// Movements
-		$this->checks[] = new WrongPitch();
-		$this->checks[] = new AirMovement();
-		$this->checks[] = new AntiImmobile();
-		$this->checks[] = new Phase();
-		$this->checks[] = new Step();
-		$this->checks[] = new Timer();
-		$this->checks[] = new OmniSprint();
-		$this->checks[] = new Jesus();
-		$this->checks[] = new Spider();
-		$this->checks[] = new FastLadder();
-		$this->checks[] = new SpeedA();
-		$this->checks[] = new SpeedB();
-		$this->checks[] = new SpeedC();
+		$this->checks[] = new \ReinfyTeam\Zuri\checks\moving\WrongPitch();
+		$this->checks[] = new \ReinfyTeam\Zuri\checks\moving\AirMovement();
+		$this->checks[] = new \ReinfyTeam\Zuri\checks\moving\AntiImmobile();
+		$this->checks[] = new \ReinfyTeam\Zuri\checks\moving\Phase();
+		$this->checks[] = new \ReinfyTeam\Zuri\checks\moving\Step();
+		$this->checks[] = new \ReinfyTeam\Zuri\checks\moving\Timer();
+		$this->checks[] = new \ReinfyTeam\Zuri\checks\moving\OmniSprint();
+		$this->checks[] = new \ReinfyTeam\Zuri\checks\moving\Jesus();
+		$this->checks[] = new \ReinfyTeam\Zuri\checks\moving\Spider();
+		$this->checks[] = new \ReinfyTeam\Zuri\checks\moving\FastLadder();
+		$this->checks[] = new \ReinfyTeam\Zuri\checks\moving\FastSwim();
+		$this->checks[] = new \ReinfyTeam\Zuri\checks\moving\speed\SpeedA();
+		$this->checks[] = new \ReinfyTeam\Zuri\checks\moving\speed\SpeedB();
+		$this->checks[] = new \ReinfyTeam\Zuri\checks\moving\speed\SpeedC();
 
 		// Network related
-		$this->checks[] = new AntiBot();
-		$this->checks[] = new EditionFaker();
-		$this->checks[] = new ProxyBot();
+		$this->checks[] = new \ReinfyTeam\Zuri\checks\network\AntiBot();
+		$this->checks[] = new \ReinfyTeam\Zuri\checks\network\EditionFaker();
+		$this->checks[] = new \ReinfyTeam\Zuri\checks\network\ProxyBot();
 
 		// Payloads
-		$this->checks[] = new CustomPayloadA();
+		$this->checks[] = new \ReinfyTeam\Zuri\checks\payload\CustomPayloadA();
 
 		// Scaffold
 		// Todo: Improve and add more checks in next release..
-		$this->checks[] = new ScaffoldA();
-		$this->checks[] = new ScaffoldB();
-		$this->checks[] = new ScaffoldC();
-		$this->checks[] = new ScaffoldD();
-		$this->checks[] = new ScaffoldE();
+		$this->checks[] = new \ReinfyTeam\Zuri\checks\scaffold\ScaffoldA();
+		$this->checks[] = new \ReinfyTeam\Zuri\checks\scaffold\ScaffoldB();
+		$this->checks[] = new \ReinfyTeam\Zuri\checks\scaffold\ScaffoldC();
+		$this->checks[] = new \ReinfyTeam\Zuri\checks\scaffold\ScaffoldD();
+		$this->checks[] = new \ReinfyTeam\Zuri\checks\scaffold\ScaffoldE();
 	}
 
 	public static function Checks() : array {
