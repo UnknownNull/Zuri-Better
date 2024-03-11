@@ -27,6 +27,7 @@ namespace ReinfyTeam\Zuri\utils;
 use pocketmine\permission\DefaultPermissions;
 use pocketmine\permission\Permission as PMPermission;
 use pocketmine\permission\PermissionManager as PMPermissionManager;
+use pocketmine\player\Player;
 use pocketmine\utils\NotCloneable;
 use pocketmine\utils\NotSerializable;
 use pocketmine\utils\SingletonTrait;
@@ -44,8 +45,9 @@ class PermissionManager {
 	public const OPERATOR = 1;
 	public const CONSOLE = 3;
 	public const NONE = -1;
+    private $attachment;
 
-	public function register(string $permission, int $permAccess, array $childPermission = []) : void {
+    public function register(string $permission, int $permAccess, array $childPermission = []) : void {
 		$this->perm[] = $permission;
 		$perm = new PMPermission($permission, "Zuri Anticheat Custom Permission", $childPermission);
 		$permManager = PMPermissionManager::getInstance();
