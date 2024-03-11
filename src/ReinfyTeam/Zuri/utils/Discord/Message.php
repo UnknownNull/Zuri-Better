@@ -75,7 +75,7 @@ class Message implements \JsonSerializable {
 		return $this;
 	}
 
-	public function jsonSerialize() {
+	public function jsonSerialize(): mixed {
 		return $this->data;
 	}
 
